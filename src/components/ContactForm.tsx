@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
+import { sendQuoteRequest } from '@/lib/emailService';
 
 const ContactForm = () => {
   const { toast } = useToast();
@@ -28,17 +29,31 @@ const ContactForm = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Validate form data
+      if (!formData.name || !formData.email || !formData.serviceType || !formData.deadline || !formData.message) {
+        toast({
+          title: "Missing information",
+          description: "Please fill out all required fields.",
+          variant: "destructive"
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Send the quote request
+      await sendQuoteRequest(formData);
+      
       toast({
         title: "Request submitted!",
         description: "We'll get back to you shortly with a quote.",
       });
-      setIsSubmitting(false);
+      
+      // Reset form
       setFormData({
         name: '',
         email: '',
@@ -47,7 +62,16 @@ const ContactForm = () => {
         deadline: '',
         message: '',
       });
-    }, 1500);
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast({
+        title: "Something went wrong",
+        description: "There was an error submitting your request. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
